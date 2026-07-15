@@ -3,523 +3,677 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EcoMap — Maharashtra Ecological Planning Platform</title>
+<title>EcoMap Maharashtra — Ecological Intelligence Platform</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --forest: #1B4332;
-    --forest-mid: #2D6A4F;
-    --forest-light: #52B788;
-    --forest-pale: #D8F3DC;
-    --soil: #A07850;
-    --soil-pale: #F4EDE4;
-    --water: #2980B9;
-    --water-pale: #D6EAF8;
-    --bird: #E67E22;
-    --bird-pale: #FDEBD0;
-    --bg: #F7F5F0;
-    --white: #FFFFFF;
-    --text: #1A1A1A;
-    --text-mid: #555;
-    --text-light: #888;
-    --border: #E0DAD0;
-    --radius: 10px;
-  }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* HEADER */
-  header {
-    background: var(--forest);
-    padding: 0 24px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    z-index: 1000;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .logo-icon {
-    width: 28px;
-    height: 28px;
-    background: var(--forest-light);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-  }
-
-  .logo-text {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: #fff;
-    letter-spacing: 0.3px;
-  }
-
-  .logo-sub {
-    font-size: 11px;
-    color: var(--forest-light);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-weight: 500;
-  }
-
-  nav {
-    display: flex;
-    gap: 4px;
-  }
-
-  nav button {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.8);
-    padding: 5px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-  }
-
-  nav button:hover { background: rgba(255,255,255,0.1); color: #fff; }
-  nav button.active { background: var(--forest-light); border-color: var(--forest-light); color: #fff; }
-
-  /* MAIN LAYOUT */
-  .main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* LEFT SIDEBAR — LAYER CONTROLS */
-  .sidebar-left {
-    width: 200px;
-    background: var(--white);
-    border-right: 1px solid var(--border);
-    padding: 16px 12px;
-    overflow-y: auto;
-    flex-shrink: 0;
-  }
-
-  .sidebar-section {
-    margin-bottom: 20px;
-  }
-
-  .sidebar-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-light);
-    margin-bottom: 8px;
-    padding-left: 4px;
-  }
-
-  .layer-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.1s;
-    margin-bottom: 2px;
-  }
-
-  .layer-item:hover { background: var(--bg); }
-
-  .layer-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .layer-name {
-    font-size: 12px;
-    color: var(--text-mid);
-    flex: 1;
-  }
-
-  .layer-toggle {
-    width: 28px;
-    height: 16px;
-    background: var(--border);
-    border-radius: 8px;
-    position: relative;
-    cursor: pointer;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .layer-toggle.on { background: var(--forest-light); }
-
-  .layer-toggle::after {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    transition: left 0.2s;
-  }
-
-  .layer-toggle.on::after { left: 14px; }
-
-  /* MAP */
-  #map {
-    flex: 1;
-    position: relative;
-  }
-
-  .map-hint {
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(27,67,50,0.9);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 12px;
-    z-index: 999;
-    pointer-events: none;
-    transition: opacity 0.3s;
-  }
-
-  /* RIGHT PANEL */
-  .panel-right {
-    width: 300px;
-    background: var(--white);
-    border-left: 1px solid var(--border);
-    overflow-y: auto;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .panel-header {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--forest-pale);
-  }
-
-  .panel-header h3 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 16px;
-    color: var(--forest);
-    margin-bottom: 2px;
-  }
-
-  .panel-header p {
-    font-size: 11px;
-    color: var(--forest-mid);
-  }
-
-  .panel-body {
-    padding: 16px;
-    flex: 1;
-  }
-
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    text-align: center;
-    padding: 32px 16px;
-  }
-
-  .empty-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-    opacity: 0.3;
-  }
-
-  .empty-state p {
-    font-size: 13px;
-    color: var(--text-light);
-    line-height: 1.6;
-  }
-
-  .data-section {
-    margin-bottom: 16px;
-  }
-
-  .data-section-title {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-light);
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .data-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .data-card {
-    background: var(--bg);
-    border-radius: var(--radius);
-    padding: 10px;
-    border: 1px solid var(--border);
-  }
-
-  .data-card-label {
-    font-size: 10px;
-    color: var(--text-light);
-    margin-bottom: 4px;
-  }
-
-  .data-card-value {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .data-card-unit {
-    font-size: 10px;
-    color: var(--text-light);
-    font-weight: 400;
-  }
-
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 16px 0;
-  }
-
-  /* PLANT CARDS */
-  .plant-card {
-    background: var(--forest-pale);
-    border: 1px solid #B7E4C7;
-    border-radius: var(--radius);
-    padding: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .plant-card:hover {
-    border-color: var(--forest-light);
-    background: #C7F0D1;
-  }
-
-  .plant-card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .plant-icon {
-    font-size: 20px;
-  }
-
-  .plant-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--forest);
-  }
-
-  .plant-scientific {
-    font-size: 10px;
-    color: var(--forest-mid);
-    font-style: italic;
-  }
-
-  .plant-tags {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .tag {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 99px;
-    font-weight: 500;
-  }
-
-  .tag-bird { background: var(--bird-pale); color: var(--bird); }
-  .tag-soil { background: var(--soil-pale); color: var(--soil); }
-  .tag-water { background: var(--water-pale); color: var(--water); }
-  .tag-tree { background: var(--forest-pale); color: var(--forest); }
-
-  /* BIRD SECTION */
-  .bird-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    background: var(--bird-pale);
-    border-radius: var(--radius);
-    margin-bottom: 6px;
-    border: 1px solid #FAD7A0;
-  }
-
-  .bird-icon { font-size: 18px; }
-
-  .bird-name {
-    font-size: 12px;
-    font-weight: 500;
-    color: #7D4E00;
-  }
-
-  .bird-detail {
-    font-size: 10px;
-    color: #A0692A;
-  }
-
-  /* COORDS */
-  .coords-bar {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255,255,255,0.9);
-    padding: 4px 12px;
-    border-radius: 99px;
-    font-size: 11px;
-    color: var(--text-light);
-    z-index: 999;
-    border: 1px solid var(--border);
-  }
-
-  /* LEGEND */
-  .legend {
-    position: absolute;
-    bottom: 40px;
-    left: 12px;
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 12px;
-    z-index: 999;
-    font-size: 11px;
-  }
-
-  .legend-title {
-    font-weight: 600;
-    color: var(--text-mid);
-    margin-bottom: 6px;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-    color: var(--text-mid);
-  }
-
-  .legend-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .export-btn {
-    width: 100%;
-    background: var(--forest);
-    color: white;
-    border: none;
-    padding: 10px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    margin-top: 8px;
-    transition: background 0.15s;
-  }
-
-  .export-btn:hover { background: var(--forest-mid); }
-
-  .score-bar {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 4px;
-  }
-
-  .score-fill {
-    height: 100%;
-    border-radius: 3px;
-    background: var(--forest-light);
-  }
-
-  .suitability {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
-    margin-bottom: 16px;
-  }
-
-  .suitability-label {
-    font-size: 11px;
-    color: var(--text-light);
-    margin-bottom: 4px;
-  }
-
-  .suitability-score {
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--forest);
-  }
-
-  .suitability-text {
-    font-size: 11px;
-    color: var(--forest-mid);
-    margin-top: 2px;
-  }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --crimson: #A51C30;
+  --crimson-dark: #8B1523;
+  --crimson-pale: #FDF0F2;
+  --forest: #1A3A2A;
+  --forest-mid: #2D5A3D;
+  --forest-light: #4A7C59;
+  --forest-pale: #EEF5F0;
+  --gold: #C9A84C;
+  --gold-pale: #FBF5E6;
+  --charcoal: #1C1C1E;
+  --warm-grey: #F5F3EF;
+  --mid-grey: #E8E4DC;
+  --text: #1C1C1E;
+  --text-mid: #4A4A4A;
+  --text-light: #8A8A8A;
+  --white: #FFFFFF;
+  --border: #DDD8CE;
+  --radius: 8px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--warm-grey);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--charcoal);
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 1000;
+  border-bottom: 2px solid var(--crimson);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  background: var(--crimson);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.logo-wordmark {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 17px;
+  color: var(--white);
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.logo-subtitle {
+  font-size: 9px;
+  color: #888;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.header-divider {
+  width: 1px;
+  height: 28px;
+  background: #333;
+}
+
+.header-tagline {
+  font-size: 11px;
+  color: #888;
+  letter-spacing: 0.5px;
+  font-style: italic;
+  font-family: 'DM Sans', sans-serif;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+nav button {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: all 0.15s;
+}
+
+nav button:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+nav button.active { color: var(--white); background: var(--crimson); }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  background: var(--charcoal);
+  border-bottom: 1px solid #2A2A2A;
+  padding: 6px 32px;
+  display: flex;
+  gap: 32px;
+  flex-shrink: 0;
+}
+
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #999;
+  font-weight: 400;
+}
+
+.stat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── MAIN LAYOUT ── */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar-left {
+  width: 220px;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-brand {
+  padding: 0 20px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.sidebar-brand-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.sidebar-brand-sub {
+  font-size: 10px;
+  color: var(--text-light);
+  letter-spacing: 0.5px;
+}
+
+.sidebar-section {
+  padding: 0 16px;
+  margin-bottom: 20px;
+}
+
+.sidebar-section-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-light);
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+  margin-bottom: 1px;
+}
+
+.layer-row:hover { background: var(--warm-grey); }
+
+.layer-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.layer-label {
+  font-size: 12px;
+  color: var(--text-mid);
+  flex: 1;
+  font-weight: 400;
+}
+
+.toggle {
+  width: 30px;
+  height: 17px;
+  background: var(--mid-grey);
+  border-radius: 99px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle.on { background: var(--forest-light); }
+.toggle::after { content: ''; position: absolute; width: 13px; height: 13px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle.on::after { left: 15px; }
+
+.depth-switch {
+  display: flex;
+  gap: 2px;
+  background: var(--mid-grey);
+  border-radius: 99px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.depth-btn {
+  border: none;
+  background: transparent;
+  font-size: 9px;
+  padding: 3px 6px;
+  border-radius: 99px;
+  cursor: pointer;
+  color: var(--text-light);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.depth-btn.active { background: var(--white); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+.depth-btn:hover:not(.active) { color: var(--text-mid); }
+
+.layer-row.stacked { flex-wrap: wrap; }
+.layer-row.stacked .depth-switch { margin-left: 18px; margin-top: 4px; width: 100%; max-width: fit-content; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-light);
+  line-height: 1.6;
+}
+
+/* ── MAP ── */
+#map { flex: 1; position: relative; }
+
+.map-hint {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(28,28,30,0.88);
+  color: rgba(255,255,255,0.9);
+  padding: 9px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 999;
+  pointer-events: none;
+  transition: opacity 0.5s;
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.coords-bar {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.92);
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 11px;
+  color: var(--text-light);
+  z-index: 999;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.3px;
+}
+
+.map-legend {
+  position: absolute;
+  bottom: 44px;
+  left: 14px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  z-index: 999;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.legend-title {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  color: var(--text-mid);
+}
+
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(28,28,30,0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.loading-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse { 0%,100% { opacity:1; transform: scale(1); } 50% { opacity:0.6; transform: scale(0.95); } }
+
+.loading-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 18px;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.loading-sub {
+  font-size: 12px;
+  color: #888;
+  letter-spacing: 0.5px;
+}
+
+.progress-bar {
+  width: 200px;
+  height: 2px;
+  background: #333;
+  border-radius: 1px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--crimson);
+  border-radius: 1px;
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+/* ── RIGHT PANEL ── */
+.panel-right {
+  width: 320px;
+  background: var(--white);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.panel-eyebrow {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 4px;
+}
+
+.panel-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 20px;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.panel-coords {
+  font-size: 11px;
+  color: var(--text-light);
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.panel-body { padding: 20px; flex: 1; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  padding: 24px;
+}
+
+.empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.25; }
+
+.empty-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  color: var(--text-mid);
+  margin-bottom: 8px;
+}
+
+.empty-text {
+  font-size: 12px;
+  color: var(--text-light);
+  line-height: 1.7;
+}
+
+/* ── SCORE ── */
+.score-block {
+  background: var(--charcoal);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.score-number {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 40px;
+  color: var(--white);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.score-right { flex: 1; }
+.score-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+.score-bar { height: 3px; background: #333; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+.score-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 1s ease; }
+.score-desc { font-size: 11px; color: #aaa; }
+
+/* ── DATA SECTIONS ── */
+.section {
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--mid-grey);
+}
+
+.section-icon { font-size: 14px; }
+
+.section-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-mid);
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.data-tile {
+  background: var(--warm-grey);
+  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--mid-grey);
+}
+
+.tile-label { font-size: 10px; color: var(--text-light); margin-bottom: 4px; letter-spacing: 0.3px; }
+.tile-value { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.2; }
+.tile-unit { font-size: 10px; color: var(--text-light); font-weight: 400; }
+
+/* ── OBSERVATIONS ── */
+.obs-block {
+  background: var(--forest-pale);
+  border: 1px solid #C8DFD0;
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+
+.obs-count {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.obs-number {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 28px;
+  color: var(--forest);
+  line-height: 1;
+}
+
+.obs-label { font-size: 11px; color: var(--forest-mid); }
+
+.obs-list { display: flex; flex-direction: column; gap: 3px; }
+
+.obs-row {
+  font-size: 11px;
+  color: var(--forest-mid);
+  padding: 4px 0;
+  border-bottom: 1px solid #DAEEe2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.obs-row:last-child { border-bottom: none; }
+.obs-row-icon { font-size: 12px; flex-shrink: 0; }
+
+.bird-block {
+  background: #FEF6EC;
+  border: 1px solid #F5DCB8;
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+
+.bird-obs-number {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 28px;
+  color: #7D4E00;
+  line-height: 1;
+}
+
+.bird-obs-label { font-size: 11px; color: #A0692A; }
+
+.bird-row {
+  font-size: 11px;
+  color: #7D4E00;
+  padding: 4px 0;
+  border-bottom: 1px solid #F5DCB8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bird-row:last-child { border-bottom: none; }
+
+/* ── PLANT CARDS ── */
+.plant-card {
+  border: 1px solid var(--mid-grey);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--white);
+}
+
+.plant-card:hover {
+  border-color: var(--forest-light);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.plant-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.plant-emoji { font-size: 22px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+.plant-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.plant-sci { font-size: 10px; color: var(--text-light); font-style: italic; }
+.plant-attr { font-size: 11px; color: var(--forest-mid); padding: 6px 0 0; border-top: 1px solid var(--mid-grey); }
+
+/* ── EXPORT ── */
+.export-btn {
+  width: 100%;
+  background: var(--crimson);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 8px;
+  transition: background 0.15s;
+  letter-spacing: 0.3px;
+}
+
+.export-btn:hover { background: var(--crimson-dark); }
+
+.section-divider {
+  height: 1px;
+  background: var(--mid-grey);
+  margin: 16px 0;
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">
-    <div class="logo-icon">🌿</div>
-    <div>
-      <div class="logo-text">EcoMap</div>
-      <div class="logo-sub">Maharashtra</div>
+  <div class="header-left">
+    <div class="logo-mark">🌿</div>
+    <div class="logo-wordmark">
+      <div class="logo-title">EcoMap Maharashtra</div>
+      <div class="logo-subtitle">Ecological Intelligence Platform</div>
     </div>
+    <div class="header-divider"></div>
+    <div class="header-tagline">Native ecosystems for better design</div>
   </div>
   <nav>
     <button class="active">Map</button>
@@ -529,99 +683,139 @@
   </nav>
 </header>
 
+<div class="stats-bar">
+  <div class="stat-pill"><div class="stat-dot" style="background:#52B788"></div><span id="plant-count">Loading plant data…</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:#E67E22"></div><span id="bird-count">Loading bird data…</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:#3A9FD8"></div><span id="water-count">Loading water bodies…</span></div>
+</div>
+
 <div class="main">
 
   <!-- LEFT SIDEBAR -->
   <div class="sidebar-left">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-title">Data Layers</div>
+      <div class="sidebar-brand-sub">Toggle visibility</div>
+    </div>
+
     <div class="sidebar-section">
-      <div class="sidebar-label">Terrain</div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#8B6914"></div>
-        <span class="layer-name">Elevation</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="sidebar-section-label">Terrain</div>
+      <div class="layer-row">
+        <div class="layer-swatch" style="background:#8B6914; border-radius:2px;"></div>
+        <span class="layer-label">Elevation</span>
+        <div class="toggle on" id="elevation-toggle" onclick="toggleLayer(this, elevationLayer)"></div>
       </div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#E74C3C"></div>
-        <span class="layer-name">Slope</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="layer-row">
+        <div class="layer-swatch" style="background:#C0392B; border-radius:2px;"></div>
+        <span class="layer-label">Slope</span>
+        <div class="toggle on" id="slope-toggle" onclick="toggleLayer(this, slopeLayer)"></div>
       </div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#9B59B6"></div>
-        <span class="layer-name">Aspect</span>
-        <div class="layer-toggle" onclick="this.classList.toggle('on')"></div>
+      <div class="layer-row">
+        <div class="layer-swatch" style="background:#8E44AD; border-radius:2px;"></div>
+        <span class="layer-label">Aspect</span>
+        <div class="toggle" id="aspect-toggle" onclick="toggleLayer(this, aspectLayer)"></div>
       </div>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">Ecology</div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#27AE60"></div>
-        <span class="layer-name">Land cover</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="sidebar-section-label">Ecology</div>
+      <div class="layer-row">
+        <div class="layer-swatch" style="background:#27AE60; border-radius:2px;"></div>
+        <span class="layer-label">Land Cover</span>
+        <div class="toggle on" id="landcover-toggle" onclick="toggleLayer(this, landcoverLayer)"></div>
       </div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#2980B9"></div>
-        <span class="layer-name">Water bodies</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
-      </div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#1B4332"></div>
-        <span class="layer-name">Protected areas</span>
-        <div class="layer-toggle" onclick="this.classList.toggle('on')"></div>
+      <div class="layer-row">
+        <div class="layer-swatch" style="background:#2980B9; border-radius:2px;"></div>
+        <span class="layer-label">Water Bodies</span>
+        <div class="toggle on" id="water-toggle" onclick="toggleLayer(this, waterLayer)"></div>
       </div>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">Soil</div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#A07850"></div>
-        <span class="layer-name">Soil pH</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="sidebar-section-label">Soil</div>
+
+      <div class="layer-row stacked">
+        <div class="layer-swatch" style="background:#A07850; border-radius:2px;"></div>
+        <span class="layer-label">Soil pH</span>
+        <div class="toggle on" id="ph-toggle" onclick="toggleSoilLayer('ph')"></div>
+        <div class="depth-switch" data-layer="ph">
+          <button class="depth-btn active" data-depth="0_5" onclick="switchDepth('ph','0_5')">0-5cm</button>
+          <button class="depth-btn" data-depth="30_60" onclick="switchDepth('ph','30_60')">30-60cm</button>
+        </div>
       </div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#7F8C8D"></div>
-        <span class="layer-name">Soil texture</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+
+      <div class="layer-row stacked">
+        <div class="layer-swatch" style="background:#5B8DB8; border-radius:2px;"></div>
+        <span class="layer-label">Soil Clay</span>
+        <div class="toggle" id="clay-toggle" onclick="toggleSoilLayer('clay')"></div>
+        <div class="depth-switch" data-layer="clay">
+          <button class="depth-btn active" data-depth="0_5" onclick="switchDepth('clay','0_5')">0-5cm</button>
+          <button class="depth-btn" data-depth="30_60" onclick="switchDepth('clay','30_60')">30-60cm</button>
+        </div>
       </div>
+
+      <div class="layer-row stacked">
+        <div class="layer-swatch" style="background:#D4A24C; border-radius:2px;"></div>
+        <span class="layer-label">Soil Sand</span>
+        <div class="toggle" id="sand-toggle" onclick="toggleSoilLayer('sand')"></div>
+        <div class="depth-switch" data-layer="sand">
+          <button class="depth-btn active" data-depth="0_5" onclick="switchDepth('sand','0_5')">0-5cm</button>
+          <button class="depth-btn" data-depth="30_60" onclick="switchDepth('sand','30_60')">30-60cm</button>
+        </div>
+      </div>
+
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">Biodiversity</div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#52B788"></div>
-        <span class="layer-name">Plants</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="sidebar-section-label">Biodiversity</div>
+      <div class="layer-row">
+        <div class="layer-swatch" style="background:#52B788; border-radius:50%;"></div>
+        <span class="layer-label">Plant Obs.</span>
+        <div class="toggle on" id="plant-toggle" onclick="toggleLayer(this, plantLayer)"></div>
       </div>
-      <div class="layer-item">
-        <div class="layer-dot" style="background:#E67E22"></div>
-        <span class="layer-name">Birds</span>
-        <div class="layer-toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="layer-row">
+        <div class="layer-swatch" style="background:#E67E22; border-radius:50%;"></div>
+        <span class="layer-label">Bird Obs.</span>
+        <div class="toggle on" id="bird-toggle" onclick="toggleLayer(this, birdLayer)"></div>
       </div>
+    </div>
+
+    <div class="sidebar-footer">
+      Data sources: India Biodiversity Portal · ISRO Bhuvan · ESA WorldCover · SoilGrids · OpenStreetMap
     </div>
   </div>
 
   <!-- MAP -->
-  <div id="map" style="position:relative;">
-    <div class="map-hint" id="hint">Click anywhere on Maharashtra to analyse the site</div>
-    <div class="coords-bar" id="coords">Hover over the map to see coordinates</div>
-    <div class="legend">
+  <div id="map">
+    <div class="loading-overlay" id="loading">
+      <div class="loading-icon">🌿</div>
+      <div class="loading-title">Loading Biodiversity Data</div>
+      <div class="loading-sub" id="loading-sub">Fetching plant observations from IBP…</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="map-hint" id="hint">Click anywhere in Maharashtra to analyse the site ecology</div>
+    <div class="coords-bar" id="coords">Move cursor over map</div>
+    <div class="map-legend">
       <div class="legend-title">Observations</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#52B788"></div>Plant sighting</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#E67E22"></div>Bird sighting</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#E74C3C"></div>Selected site</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#52B788"></div>Plant sighting</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#E67E22"></div>Bird sighting</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#3A9FD8"></div>Water body</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#A51C30"></div>Selected site</div>
     </div>
   </div>
 
   <!-- RIGHT PANEL -->
   <div class="panel-right">
     <div class="panel-header">
-      <h3>Site Analysis</h3>
-      <p id="panel-location">Click on the map to begin</p>
+      <div class="panel-eyebrow">Site Analysis</div>
+      <div class="panel-title" id="panel-title">Select a Location</div>
+      <div class="panel-coords" id="panel-coords">Click on the map to begin</div>
     </div>
     <div class="panel-body" id="panel-body">
       <div class="empty-state">
         <div class="empty-icon">🗺️</div>
-        <p>Click anywhere on the map to get ecological data and native plant recommendations for that location.</p>
+        <div class="empty-title">No site selected</div>
+        <div class="empty-text">Click anywhere on the map to retrieve ecological intelligence for that location — terrain analysis, soil data, nearby biodiversity observations, and native plant recommendations.</div>
       </div>
     </div>
   </div>
@@ -629,212 +823,305 @@
 </div>
 
 <script>
-const map = L.map('map').setView([19.5, 75.5], 7);
+const GITHUB = 'https://raw.githubusercontent.com/anishshinde230-spec/ecomap-maharashtra/main/';
+
+// Relative to this HTML file's own location (GitHub Pages serves the repo root,
+// so this resolves to https://.../ecomap-maharashtra/tiles/<layer>/{z}/{x}/{y}.png)
+const TILES_BASE = 'tiles/';
+
+const map = L.map('map', { zoomControl: true }).setView([19.5, 75.5], 7);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
+  attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// Sample plant observation points around Maharashtra
-const plantPoints = [
-  [19.99, 73.78], [18.52, 73.85], [20.01, 73.68], [17.68, 74.00],
-  [21.15, 79.09], [19.08, 72.88], [18.65, 73.76], [20.88, 77.75],
-  [16.71, 74.24], [21.46, 80.01], [19.45, 76.57], [18.30, 76.02],
-  [20.54, 75.62], [17.10, 73.35], [21.80, 78.56], [19.22, 77.33],
-  [18.97, 72.82], [20.34, 74.78], [16.84, 74.60], [21.25, 79.88]
-];
+// ── RASTER TILE LAYERS ──
+// Tiles were only generated for a 1°×1° pilot extent (Pune/Nashik belt,
+// 72.999861111,73.999861111,20.000138889,21.000138889) at zoom ranges matched
+// to each dataset's native resolution. minNativeZoom/maxNativeZoom let Leaflet
+// reuse the nearest generated zoom level (up- or down-scaled) instead of
+// requesting nonexistent tiles outside that range, so panning/zooming
+// elsewhere on the map just shows blank rather than broken image icons.
+function makeTileLayer(folder, maxNativeZoom) {
+  return L.tileLayer(TILES_BASE + folder + '/{z}/{x}/{y}.png', {
+    minNativeZoom: 5,
+    maxNativeZoom: maxNativeZoom,
+    minZoom: 0,
+    maxZoom: 18,
+    opacity: 0.75,
+    attribution: 'EcoMap Maharashtra (pilot extent)'
+  });
+}
 
-// Sample bird observation points
-const birdPoints = [
-  [19.85, 73.90], [18.60, 73.94], [20.15, 73.55], [17.55, 74.15],
-  [21.05, 79.25], [19.12, 72.95], [18.75, 73.66], [20.95, 77.60],
-  [16.60, 74.38], [21.55, 79.95], [19.35, 76.70], [18.40, 75.88],
-  [20.62, 75.50], [17.22, 73.45], [21.72, 78.40], [19.30, 77.45]
-];
+let elevationLayer = makeTileLayer('elevation', 12);
+let slopeLayer     = makeTileLayer('slopes', 12);
+let aspectLayer    = makeTileLayer('aspects', 12);
+let landcoverLayer = makeTileLayer('landcover', 13);
 
-const plantIcon = L.circleMarker;
-const plantLayerGroup = L.layerGroup();
-const birdLayerGroup = L.layerGroup();
+// Soil layers: each has a 0-5cm and 30-60cm depth version. Only one depth per
+// type is ever on the map at a time; switchDepth() swaps which one that is.
+let soilLayers = {
+  ph:   { '0_5': makeTileLayer('soil_ph_0_5', 9),   '30_60': makeTileLayer('soil_ph_30_60', 9) },
+  clay: { '0_5': makeTileLayer('soil_clay_0_5', 9), '30_60': makeTileLayer('soil_clay_30_60', 9) },
+  sand: { '0_5': makeTileLayer('soil_sand_0_5', 9), '30_60': makeTileLayer('soil_sand_30_60', 9) }
+};
+let soilActiveDepth = { ph: '0_5', clay: '0_5', sand: '0_5' };
+let soilVisible     = { ph: true, clay: false, sand: false }; // matches initial "on" toggles below
 
-plantPoints.forEach(p => {
-  L.circleMarker(p, {
-    radius: 5,
-    fillColor: '#52B788',
-    color: '#2D6A4F',
-    weight: 1,
-    opacity: 1,
-    fillOpacity: 0.8
-  }).bindPopup('<b>Plant observation</b><br>India Biodiversity Portal').addTo(plantLayerGroup);
-});
-
-birdPoints.forEach(p => {
-  L.circleMarker(p, {
-    radius: 5,
-    fillColor: '#E67E22',
-    color: '#A04000',
-    weight: 1,
-    opacity: 1,
-    fillOpacity: 0.8
-  }).bindPopup('<b>Bird observation</b><br>India Biodiversity Portal').addTo(birdLayerGroup);
-});
-
-plantLayerGroup.addTo(map);
-birdLayerGroup.addTo(map);
-
+let plantLayer = L.layerGroup().addTo(map);
+let birdLayer = L.layerGroup().addTo(map);
+let waterLayer = L.layerGroup().addTo(map);
 let selectedMarker = null;
+let allPlants = [], allBirds = [];
 
-map.on('mousemove', function(e) {
+function toggleLayer(btn, layer) {
+  btn.classList.toggle('on');
+  btn.classList.contains('on') ? map.addLayer(layer) : map.removeLayer(layer);
+}
+
+function toggleSoilLayer(type) {
+  soilVisible[type] = !soilVisible[type];
+  const layer = soilLayers[type][soilActiveDepth[type]];
+  soilVisible[type] ? map.addLayer(layer) : map.removeLayer(layer);
+  document.getElementById(type + '-toggle').classList.toggle('on');
+}
+
+function switchDepth(type, depth) {
+  if (soilActiveDepth[type] === depth) return;
+  const wasVisible = soilVisible[type];
+  const oldLayer = soilLayers[type][soilActiveDepth[type]];
+  if (wasVisible) map.removeLayer(oldLayer);
+  soilActiveDepth[type] = depth;
+  const newLayer = soilLayers[type][depth];
+  if (wasVisible) map.addLayer(newLayer);
+  document.querySelectorAll('.depth-switch[data-layer="' + type + '"] .depth-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.depth === depth);
+  });
+}
+
+// Apply initial visibility for the raster layers that default "on"
+// (matching each toggle's initial class in the HTML above).
+elevationLayer.addTo(map);
+slopeLayer.addTo(map);
+landcoverLayer.addTo(map);
+soilLayers.ph['0_5'].addTo(map);
+
+function setProgress(pct, msg) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('loading-sub').textContent = msg;
+}
+
+async function loadData() {
+  try {
+    setProgress(10, 'Fetching plant observations from IBP…');
+    const pr = await fetch(GITHUB + 'plants_maharashtra.geojson');
+    const pd = await pr.json();
+    allPlants = pd.features || [];
+    document.getElementById('plant-count').textContent = `${allPlants.length.toLocaleString()} plant observations`;
+    setProgress(40, 'Mapping plant records…');
+
+    allPlants.forEach(f => {
+      if (!f.geometry?.coordinates) return;
+      const [lng, lat] = f.geometry.coordinates;
+      if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+      const name = f.properties.vernacularName || f.properties.scientificName || 'Plant sp.';
+      L.circleMarker([lat, lng], {
+        radius: 4, fillColor: '#52B788', color: '#2D5A3D',
+        weight: 0.8, opacity: 1, fillOpacity: 0.8
+      }).bindPopup(`<b style="font-family:'DM Sans',sans-serif">🌿 ${name}</b><br><small style="color:#888">${f.properties.placeName || ''}</small>`).addTo(plantLayer);
+    });
+
+    setProgress(55, 'Fetching bird observations…');
+    const br = await fetch(GITHUB + 'birds_maharashtra.geojson');
+    const bd = await br.json();
+    allBirds = bd.features || [];
+    document.getElementById('bird-count').textContent = `${allBirds.length.toLocaleString()} bird observations`;
+    setProgress(75, 'Mapping bird records…');
+
+    allBirds.forEach(f => {
+      if (!f.geometry?.coordinates) return;
+      const [lng, lat] = f.geometry.coordinates;
+      if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+      const name = f.properties.vernacularName || f.properties.scientificName || 'Bird sp.';
+      L.circleMarker([lat, lng], {
+        radius: 4, fillColor: '#E67E22', color: '#8B4000',
+        weight: 0.8, opacity: 1, fillOpacity: 0.8
+      }).bindPopup(`<b style="font-family:'DM Sans',sans-serif">🐦 ${name}</b><br><small style="color:#888">${f.properties.placeName || ''}</small>`).addTo(birdLayer);
+    });
+
+    setProgress(88, 'Loading water body geometries…');
+    const wr = await fetch(GITHUB + 'water_bodies_maharashtra.geojson');
+    const wd = await wr.json();
+    document.getElementById('water-count').textContent = `${(wd.features||[]).length.toLocaleString()} water bodies`;
+    L.geoJSON(wd, {
+      style: { color: '#2980B9', fillColor: '#3A9FD8', fillOpacity: 0.35, weight: 1 }
+    }).addTo(waterLayer);
+
+    setProgress(100, 'Ready');
+    setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 400);
+
+  } catch(err) {
+    document.getElementById('loading-sub').textContent = '⚠ Error loading data. Check connection.';
+    console.error(err);
+  }
+}
+
+map.on('mousemove', e => {
   document.getElementById('coords').textContent =
-    `Lat: ${e.latlng.lat.toFixed(4)}°N  Lon: ${e.latlng.lng.toFixed(4)}°E`;
+    `${e.latlng.lat.toFixed(5)}°N   ${e.latlng.lng.toFixed(5)}°E`;
 });
 
-map.on('click', function(e) {
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
-
+map.on('click', e => {
+  const { lat, lng } = e.latlng;
   document.getElementById('hint').style.opacity = '0';
-
   if (selectedMarker) map.removeLayer(selectedMarker);
-
   selectedMarker = L.circleMarker([lat, lng], {
-    radius: 10,
-    fillColor: '#E74C3C',
-    color: '#922B21',
-    weight: 2,
-    opacity: 1,
-    fillOpacity: 0.9
+    radius: 11, fillColor: '#A51C30', color: '#fff',
+    weight: 2.5, opacity: 1, fillOpacity: 0.9
   }).addTo(map);
-
-  document.getElementById('panel-location').textContent =
-    `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
-
-  showSiteData(lat, lng);
+  document.getElementById('panel-title').textContent = 'Site Ecology Report';
+  document.getElementById('panel-coords').textContent = `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
+  buildPanel(lat, lng);
 });
 
-function showSiteData(lat, lng) {
-  // Simulate data based on location
-  const elevation = Math.round(200 + (lat - 16) * 80 + Math.random() * 150);
-  const slope = Math.round(2 + Math.random() * 18);
-  const rainfall = Math.round(600 + Math.random() * 800);
-  const temp = Math.round(22 + Math.random() * 8);
-  const pH = (6.2 + Math.random() * 1.2).toFixed(1);
-  const clay = Math.round(25 + Math.random() * 30);
-  const sand = Math.round(20 + Math.random() * 25);
+function nearby(lat, lng, data, r = 0.5) {
+  return data.filter(f => {
+    if (!f.geometry?.coordinates) return false;
+    const [fLng, fLat] = f.geometry.coordinates;
+    return Math.abs(fLat - lat) < r && Math.abs(fLng - lng) < r;
+  });
+}
 
-  const aspects = ['North', 'North-East', 'East', 'South-East', 'South', 'South-West', 'West', 'North-West'];
-  const aspect = aspects[Math.floor(Math.random() * aspects.length)];
+function buildPanel(lat, lng) {
+  const nPlants = nearby(lat, lng, allPlants);
+  const nBirds = nearby(lat, lng, allBirds);
 
-  const landcovers = ['Shrubland', 'Cropland', 'Tree cover', 'Grassland', 'Mixed vegetation'];
-  const landcover = landcovers[Math.floor(lat * lng) % landcovers.length];
+  const elev = Math.round(180 + (lat - 16) * 85 + Math.random() * 140);
+  const slope = Math.round(2 + Math.random() * 20);
+  const rain = Math.round(550 + Math.random() * 900);
+  const temp = (23 + Math.random() * 8).toFixed(1);
+  const pH = (6.0 + Math.random() * 1.4).toFixed(1);
+  const clay = Math.round(22 + Math.random() * 32);
+  const sand = Math.round(18 + Math.random() * 28);
+  const aspects = ['North','NE','East','SE','South','SW','West','NW'];
+  const aspect = aspects[Math.floor(Math.random() * 8)];
+  const lcs = ['Shrubland','Cropland','Tree cover','Grassland','Mixed forest'];
+  const lc = lcs[Math.floor((lat * lng * 10) % lcs.length)];
+  const score = Math.min(98, Math.round(55 + nPlants.length * 0.4 + nBirds.length * 0.3 + Math.random() * 10));
 
-  const suitability = Math.round(65 + Math.random() * 30);
+  const pNames = [...new Set(nPlants.map(f => f.properties.vernacularName || f.properties.scientificName).filter(Boolean))].slice(0,6);
+  const bNames = [...new Set(nBirds.map(f => f.properties.vernacularName || f.properties.scientificName).filter(Boolean))].slice(0,6);
 
-  const plants = [
-    { name: 'Flame of the Forest', sci: 'Butea monosperma', icon: '🌳', birds: ['Purple Sunbird', 'Bees'], tags: ['tree', 'bird'] },
-    { name: 'Indian Gooseberry', sci: 'Phyllanthus emblica', icon: '🌿', birds: ['Common Myna', 'Red-vented Bulbul'], tags: ['tree', 'bird'] },
-    { name: 'Karanj', sci: 'Millettia pinnata', icon: '🌲', birds: ['Black Kite', 'Common Hawk-Cuckoo'], tags: ['tree', 'bird'] },
-    { name: 'Bael', sci: 'Aegle marmelos', icon: '🍃', birds: ['Indian Roller', 'Grey Hornbill'], tags: ['tree', 'bird'] },
-    { name: 'Indian Coral Tree', sci: 'Erythrina variegata', icon: '🌺', birds: ['Purple Sunbird', 'Oriole'], tags: ['tree', 'bird'] },
-  ];
-
-  const birds = [
-    { name: 'Purple Sunbird', detail: 'Year-round · Nectar feeder', icon: '🐦' },
-    { name: 'Red-vented Bulbul', detail: 'Year-round · Fruit & insect', icon: '🦅' },
-    { name: 'Common Myna', detail: 'Year-round · Omnivore', icon: '🐤' },
-    { name: 'Indian Roller', detail: 'Seasonal · Insect feeder', icon: '🦜' },
+  const recPlants = [
+    { name:'Flame of the Forest', sci:'Butea monosperma', e:'🌳', attr:'Attracts Purple Sunbird, honeybees; nitrogen fixer' },
+    { name:'Indian Gooseberry', sci:'Phyllanthus emblica', e:'🌿', attr:'Fruit for bulbuls, mynas; medicinal value' },
+    { name:'Karanj', sci:'Millettia pinnata', e:'🌲', attr:'Nesting for kites, crows; soil stabiliser' },
+    { name:'Bael', sci:'Aegle marmelos', e:'🍃', attr:'Attracts hornbills, rollers; drought tolerant' },
   ];
 
   document.getElementById('panel-body').innerHTML = `
-    <div class="suitability">
-      <div class="suitability-label">Ecological suitability score</div>
-      <div class="suitability-score">${suitability}<span style="font-size:14px;font-weight:400;color:var(--text-light)">/100</span></div>
-      <div class="score-bar"><div class="score-fill" style="width:${suitability}%"></div></div>
-      <div class="suitability-text">${suitability > 80 ? 'Excellent — high native biodiversity potential' : suitability > 65 ? 'Good — suitable for native planting' : 'Moderate — some conditions need attention'}</div>
-    </div>
 
-    <div class="data-section">
-      <div class="data-section-title">⛰️ Terrain</div>
-      <div class="data-grid">
-        <div class="data-card">
-          <div class="data-card-label">Elevation</div>
-          <div class="data-card-value">${elevation}<span class="data-card-unit"> m</span></div>
-        </div>
-        <div class="data-card">
-          <div class="data-card-label">Slope</div>
-          <div class="data-card-value">${slope}<span class="data-card-unit">°</span></div>
-        </div>
-        <div class="data-card">
-          <div class="data-card-label">Aspect</div>
-          <div class="data-card-value" style="font-size:13px;">${aspect}</div>
-        </div>
-        <div class="data-card">
-          <div class="data-card-label">Land cover</div>
-          <div class="data-card-value" style="font-size:11px;">${landcover}</div>
-        </div>
+    <div class="score-block">
+      <div class="score-number">${score}</div>
+      <div class="score-right">
+        <div class="score-label">Ecological Suitability</div>
+        <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>
+        <div class="score-desc">${score>82?'Excellent native biodiversity potential':score>68?'Good — suitable for native restoration':'Moderate — site preparation recommended'}</div>
       </div>
     </div>
 
-    <div class="data-section">
-      <div class="data-section-title">🌱 Soil & Climate</div>
-      <div class="data-grid">
-        <div class="data-card">
-          <div class="data-card-label">Soil pH</div>
-          <div class="data-card-value">${pH}</div>
-        </div>
-        <div class="data-card">
-          <div class="data-card-label">Clay content</div>
-          <div class="data-card-value">${clay}<span class="data-card-unit">%</span></div>
-        </div>
-        <div class="data-card">
-          <div class="data-card-label">Rainfall</div>
-          <div class="data-card-value">${rainfall}<span class="data-card-unit"> mm</span></div>
-        </div>
-        <div class="data-card">
-          <div class="data-card-label">Avg temp</div>
-          <div class="data-card-value">${temp}<span class="data-card-unit">°C</span></div>
-        </div>
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">⛰️</span>
+        <span class="section-title">Terrain Analysis</span>
+      </div>
+      <div class="grid-2">
+        <div class="data-tile"><div class="tile-label">Elevation</div><div class="tile-value">${elev}<span class="tile-unit"> m</span></div></div>
+        <div class="data-tile"><div class="tile-label">Slope</div><div class="tile-value">${slope}<span class="tile-unit">°</span></div></div>
+        <div class="data-tile"><div class="tile-label">Aspect</div><div class="tile-value" style="font-size:14px">${aspect}</div></div>
+        <div class="data-tile"><div class="tile-label">Land Cover</div><div class="tile-value" style="font-size:12px">${lc}</div></div>
       </div>
     </div>
 
-    <div class="divider"></div>
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🌱</span>
+        <span class="section-title">Soil & Climate</span>
+      </div>
+      <div class="grid-2">
+        <div class="data-tile"><div class="tile-label">Soil pH</div><div class="tile-value">${pH}</div></div>
+        <div class="data-tile"><div class="tile-label">Clay Content</div><div class="tile-value">${clay}<span class="tile-unit">%</span></div></div>
+        <div class="data-tile"><div class="tile-label">Annual Rain</div><div class="tile-value">${rain}<span class="tile-unit"> mm</span></div></div>
+        <div class="data-tile"><div class="tile-label">Avg Temp</div><div class="tile-value">${temp}<span class="tile-unit">°C</span></div></div>
+      </div>
+    </div>
 
-    <div class="data-section">
-      <div class="data-section-title">🌳 Recommended native plants</div>
-      ${plants.slice(0,3).map(p => `
+    <div class="section-divider"></div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🌿</span>
+        <span class="section-title">Plant Observations Nearby</span>
+      </div>
+      <div class="obs-block">
+        <div class="obs-count">
+          <div class="obs-number">${nPlants.length}</div>
+          <div class="obs-label">records within 50 km<br><span style="color:#888;font-size:10px">India Biodiversity Portal</span></div>
+        </div>
+        ${pNames.length > 0 ? `
+        <div class="obs-list">
+          ${pNames.map(n=>`<div class="obs-row"><span class="obs-row-icon">🌱</span>${n}</div>`).join('')}
+          ${nPlants.length > 6 ? `<div class="obs-row" style="color:var(--forest-light);font-style:italic">+ ${nPlants.length-6} more species recorded</div>` : ''}
+        </div>` : `<div style="font-size:11px;color:#888;font-style:italic">No records in immediate vicinity</div>`}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🐦</span>
+        <span class="section-title">Bird Observations Nearby</span>
+      </div>
+      <div class="bird-block">
+        <div class="obs-count">
+          <div class="bird-obs-number">${nBirds.length}</div>
+          <div class="bird-obs-label">records within 50 km<br><span style="color:#bbb;font-size:10px">India Biodiversity Portal</span></div>
+        </div>
+        ${bNames.length > 0 ? `
+        <div class="obs-list">
+          ${bNames.map(n=>`<div class="bird-row"><span class="obs-row-icon">🐦</span>${n}</div>`).join('')}
+          ${nBirds.length > 6 ? `<div class="bird-row" style="color:#C8860A;font-style:italic">+ ${nBirds.length-6} more species recorded</div>` : ''}
+        </div>` : `<div style="font-size:11px;color:#aaa;font-style:italic">No records in immediate vicinity</div>`}
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🌳</span>
+        <span class="section-title">Native Plant Recommendations</span>
+      </div>
+      ${recPlants.map(p=>`
         <div class="plant-card">
-          <div class="plant-card-header">
-            <div class="plant-icon">${p.icon}</div>
+          <div class="plant-header">
+            <div class="plant-emoji">${p.e}</div>
             <div>
               <div class="plant-name">${p.name}</div>
-              <div class="plant-scientific">${p.sci}</div>
+              <div class="plant-sci">${p.sci}</div>
             </div>
           </div>
-          <div class="plant-tags">
-            <span class="tag tag-tree">Native tree</span>
-            <span class="tag tag-bird">Attracts birds</span>
-          </div>
+          <div class="plant-attr">${p.attr}</div>
         </div>
       `).join('')}
     </div>
 
-    <div class="data-section">
-      <div class="data-section-title">🐦 Birds observed nearby</div>
-      ${birds.slice(0,3).map(b => `
-        <div class="bird-item">
-          <div class="bird-icon">${b.icon}</div>
-          <div>
-            <div class="bird-name">${b.name}</div>
-            <div class="bird-detail">${b.detail}</div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-
-    <button class="export-btn" onclick="alert('Export feature coming soon — will generate a PDF site report for your project.')">
-      Export site report →
+    <button class="export-btn" onclick="alert('PDF export coming soon — will include full site ecological report.')">
+      Export Site Report &rarr;
     </button>
   `;
 }
+
+loadData();
 </script>
 </body>
 </html>
