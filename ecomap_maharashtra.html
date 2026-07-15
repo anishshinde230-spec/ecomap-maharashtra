@@ -972,7 +972,8 @@ nav button.active { color: var(--white); background: var(--crimson); }
   <div id="terrain-map"></div>
   <div class="terrain-loading" id="terrain-loading">
     <div class="loading-icon">🏔️</div>
-    <div class="loading-title">Building 3D terrain…</div>
+    <div class="loading-title" id="terrain-loading-title">Building 3D terrain…</div>
+    <div class="loading-sub" id="terrain-loading-sub"></div>
   </div>
   <div class="terrain-hint">Drag to rotate · Ctrl+drag or two fingers to tilt · Scroll to zoom</div>
 </div>
@@ -1359,61 +1360,105 @@ function buildPanel(lat, lng) {
 // area still shows real EcoMap data, just rendered in 3D.
 const PILOT_CENTER = [73.5, 20.5]; // roughly the middle of the pilot extent
 let terrainMap = null;
+let terrainReady = false;
+let terrainWatchdog = null;
+
+function terrainStatus(title, sub) {
+  document.getElementById('terrain-loading-title').textContent = title;
+  document.getElementById('terrain-loading-sub').textContent = sub || '';
+}
 
 function open3DTerrain() {
   document.getElementById('terrain-overlay').classList.add('open');
-  if (terrainMap) return; // already built, just re-showing the overlay
+  if (terrainMap && terrainReady) return; // already built and working, just re-showing the overlay
+  if (terrainMap && !terrainReady) {
+    // Previous attempt got stuck or failed — tear it down and try again.
+    try { terrainMap.remove(); } catch (err) {}
+    terrainMap = null;
+  }
 
   document.getElementById('terrain-loading').classList.remove('hide');
+  terrainStatus('Building 3D terrain…', 'Fetching elevation and land cover data');
 
-  terrainMap = new maplibregl.Map({
-    container: 'terrain-map',
-    center: PILOT_CENTER,
-    zoom: 10.5,
-    pitch: 65,
-    bearing: -20,
-    maxPitch: 85,
-    style: {
-      version: 8,
-      sources: {
-        'osm-base': {
-          type: 'raster',
-          tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '© OpenStreetMap'
-        },
-        'terrain-dem': {
-          type: 'raster-dem',
-          tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          encoding: 'terrarium',
-          maxzoom: 15
-        },
-        'ecomap-landcover': {
-          type: 'raster',
-          tiles: [window.location.href.replace(/[^/]*$/, '') + TILES_BASE + 'landcover/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          minzoom: 5,
-          maxzoom: 13
-        }
-      },
-      layers: [
-        { id: 'osm-base-layer', type: 'raster', source: 'osm-base' },
-        { id: 'sky', type: 'sky', paint: { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 12 } },
-        { id: 'ecomap-landcover-layer', type: 'raster', source: 'ecomap-landcover', paint: { 'raster-opacity': 0.8 } }
-      ]
+  // Safety net: if the map hasn't finished loading within 10s (slow network,
+  // an ad-blocker silently dropping a tile request, etc.), stop spinning
+  // forever and tell the user plainly instead.
+  terrainWatchdog = setTimeout(() => {
+    if (!terrainReady) {
+      terrainStatus('This is taking longer than expected…', 'Check your connection, or close and try again. (Browser extensions that block tracking/ads sometimes block map tile requests too.)');
     }
-  });
+  }, 10000);
+
+  try {
+    terrainMap = new maplibregl.Map({
+      container: 'terrain-map',
+      center: PILOT_CENTER,
+      zoom: 10.5,
+      pitch: 65,
+      bearing: -20,
+      maxPitch: 85,
+      style: {
+        version: 8,
+        sources: {
+          'osm-base': {
+            type: 'raster',
+            tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png', 'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png', 'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap'
+          },
+          'terrain-dem': {
+            type: 'raster-dem',
+            tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            encoding: 'terrarium',
+            maxzoom: 15
+          },
+          'ecomap-landcover': {
+            type: 'raster',
+            tiles: [window.location.href.replace(/[^/]*$/, '') + TILES_BASE + 'landcover/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            minzoom: 5,
+            maxzoom: 13
+          }
+        },
+        layers: [
+          { id: 'osm-base-layer', type: 'raster', source: 'osm-base' },
+          { id: 'ecomap-landcover-layer', type: 'raster', source: 'ecomap-landcover', paint: { 'raster-opacity': 0.8 } }
+        ]
+      }
+    });
+  } catch (err) {
+    clearTimeout(terrainWatchdog);
+    terrainStatus('Couldn\'t start the 3D view', String(err?.message || err));
+    console.error('3D terrain init error:', err);
+    return;
+  }
 
   terrainMap.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
-  terrainMap.on('load', () => {
-    terrainMap.setTerrain({ source: 'terrain-dem', exaggeration: 1.6 });
+  // 'idle' fires once the map has actually finished rendering the current
+  // view (style loaded AND initial tiles settled) — a more reliable signal
+  // than 'load' that something is genuinely visible on screen.
+  terrainMap.once('idle', () => {
+    terrainReady = true;
+    clearTimeout(terrainWatchdog);
     document.getElementById('terrain-loading').classList.add('hide');
+  });
+
+  terrainMap.on('load', () => {
+    try {
+      terrainMap.setTerrain({ source: 'terrain-dem', exaggeration: 1.6 });
+    } catch (err) {
+      console.error('setTerrain failed:', err);
+    }
   });
 
   terrainMap.on('error', (e) => {
     console.error('3D terrain error:', e?.error || e);
+    if (!terrainReady) {
+      terrainStatus('Ran into a problem loading the 3D view', String(e?.error?.message || 'Unknown error — see browser console for details.'));
+      clearTimeout(terrainWatchdog);
+    }
   });
 }
 
