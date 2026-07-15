@@ -6,6 +6,8 @@
 <title>EcoMap Maharashtra — Ecological Intelligence Platform</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css"/>
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
 <style>
@@ -689,6 +691,116 @@ nav button.active { color: var(--white); background: var(--crimson); }
   flex-shrink: 0;
   background: var(--mid-grey);
 }
+
+/* ── 3D TERRAIN VIEW ── */
+.btn-3d {
+  position: absolute;
+  top: 20px;
+  right: 14px;
+  z-index: 999;
+  background: var(--charcoal);
+  color: var(--white);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-lg);
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.btn-3d:hover { background: var(--crimson); transform: translateY(-1px); }
+
+.terrain-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--charcoal);
+  z-index: 5000;
+  display: none;
+}
+
+.terrain-overlay.open { display: block; }
+
+#terrain-map { position: absolute; inset: 0; }
+
+.terrain-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: linear-gradient(rgba(0,0,0,0.55), transparent);
+  pointer-events: none;
+}
+
+.terrain-title {
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.terrain-close {
+  pointer-events: auto;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--white);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s;
+}
+
+.terrain-close:hover { background: rgba(255,255,255,0.25); }
+
+.terrain-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(28,28,30,0.75);
+  color: rgba(255,255,255,0.85);
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.terrain-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  color: var(--white);
+  background: var(--charcoal);
+}
+
+.terrain-loading.hide { display: none; }
 </style>
 </head>
 <body>
@@ -822,6 +934,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     </div>
     <div class="map-hint" id="hint">Click anywhere in Maharashtra to analyse the site ecology</div>
+    <button class="btn-3d" onclick="open3DTerrain()">🏔️ 3D Terrain View</button>
     <div class="coords-bar" id="coords">Move cursor over map</div>
     <div class="map-legend">
       <div class="legend-title">Observations</div>
@@ -848,6 +961,20 @@ nav button.active { color: var(--white); background: var(--crimson); }
     </div>
   </div>
 
+</div>
+
+<!-- 3D TERRAIN VIEW -->
+<div class="terrain-overlay" id="terrain-overlay">
+  <div class="terrain-header">
+    <div class="terrain-title">🏔️ EcoMap Maharashtra — 3D Terrain (Pune/Nashik pilot belt)</div>
+    <button class="terrain-close" onclick="close3DTerrain()">✕</button>
+  </div>
+  <div id="terrain-map"></div>
+  <div class="terrain-loading" id="terrain-loading">
+    <div class="loading-icon">🏔️</div>
+    <div class="loading-title">Building 3D terrain…</div>
+  </div>
+  <div class="terrain-hint">Drag to rotate · Ctrl+drag or two fingers to tilt · Scroll to zoom</div>
 </div>
 
 <script>
@@ -1220,6 +1347,78 @@ function buildPanel(lat, lng) {
   // Now that the placeholders above are in the DOM, kick off their photo lookups.
   pEntries.forEach(e => { if (e.sci) loadPhotoInto(e.sci, e.photoId, 'obs-row-thumb'); });
   bEntries.forEach(e => { if (e.sci) loadPhotoInto(e.sci, e.photoId, 'bird-row-thumb'); });
+}
+
+// ── 3D TERRAIN VIEW ──
+// Built with MapLibre GL (a separate renderer from the Leaflet map above —
+// Leaflet has no native 3D/terrain support). The terrain HEIGHT comes from
+// AWS's free public "Terrarium" elevation tiles (global coverage, real
+// elevation encoded directly into pixel RGB values) since our own QGIS
+// elevation tiles are colorized for viewing, not encoded for 3D rendering.
+// Our own Land Cover tiles are draped on top as a texture so the pilot
+// area still shows real EcoMap data, just rendered in 3D.
+const PILOT_CENTER = [73.5, 20.5]; // roughly the middle of the pilot extent
+let terrainMap = null;
+
+function open3DTerrain() {
+  document.getElementById('terrain-overlay').classList.add('open');
+  if (terrainMap) return; // already built, just re-showing the overlay
+
+  document.getElementById('terrain-loading').classList.remove('hide');
+
+  terrainMap = new maplibregl.Map({
+    container: 'terrain-map',
+    center: PILOT_CENTER,
+    zoom: 10.5,
+    pitch: 65,
+    bearing: -20,
+    maxPitch: 85,
+    style: {
+      version: 8,
+      sources: {
+        'osm-base': {
+          type: 'raster',
+          tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© OpenStreetMap'
+        },
+        'terrain-dem': {
+          type: 'raster-dem',
+          tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          encoding: 'terrarium',
+          maxzoom: 15
+        },
+        'ecomap-landcover': {
+          type: 'raster',
+          tiles: [window.location.href.replace(/[^/]*$/, '') + TILES_BASE + 'landcover/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          minzoom: 5,
+          maxzoom: 13
+        }
+      },
+      layers: [
+        { id: 'osm-base-layer', type: 'raster', source: 'osm-base' },
+        { id: 'sky', type: 'sky', paint: { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 12 } },
+        { id: 'ecomap-landcover-layer', type: 'raster', source: 'ecomap-landcover', paint: { 'raster-opacity': 0.8 } }
+      ]
+    }
+  });
+
+  terrainMap.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+
+  terrainMap.on('load', () => {
+    terrainMap.setTerrain({ source: 'terrain-dem', exaggeration: 1.6 });
+    document.getElementById('terrain-loading').classList.add('hide');
+  });
+
+  terrainMap.on('error', (e) => {
+    console.error('3D terrain error:', e?.error || e);
+  });
+}
+
+function close3DTerrain() {
+  document.getElementById('terrain-overlay').classList.remove('open');
 }
 
 loadData();
