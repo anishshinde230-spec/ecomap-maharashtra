@@ -661,6 +661,34 @@ nav button.active { color: var(--white); background: var(--crimson); }
   background: var(--mid-grey);
   margin: 16px 0;
 }
+
+/* ── SPECIES PHOTOS ── */
+.popup-photo {
+  width: 100%;
+  max-width: 200px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-top: 6px;
+  display: block;
+  background: var(--mid-grey);
+}
+
+.popup-photo-loading {
+  font-size: 10px;
+  color: #aaa;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.obs-row-thumb, .bird-row-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--mid-grey);
+}
 </style>
 </head>
 <body>
@@ -874,6 +902,51 @@ let waterLayer = L.layerGroup().addTo(map);
 let selectedMarker = null;
 let allPlants = [], allBirds = [];
 
+// ── SPECIES REFERENCE PHOTOS ──
+// Looks up a representative photo per species (by scientific name) from
+// Wikipedia's free public REST API — no key required, CORS-enabled.
+// Results (including "not found") are cached so each species is only
+// looked up once no matter how many observation points share that name.
+let speciesImageCache = {};
+
+async function fetchSpeciesImage(scientificName) {
+  if (!scientificName) return null;
+  if (scientificName in speciesImageCache) return speciesImageCache[scientificName];
+  try {
+    const title = encodeURIComponent(scientificName.trim().replace(/ /g, '_'));
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`);
+    if (!res.ok) { speciesImageCache[scientificName] = null; return null; }
+    const data = await res.json();
+    const url = data?.thumbnail?.source || null;
+    speciesImageCache[scientificName] = url;
+    return url;
+  } catch (err) {
+    speciesImageCache[scientificName] = null;
+    return null;
+  }
+}
+
+// Fills in a placeholder element once the photo lookup resolves. Used both
+// for the larger popup photo (imgClass 'popup-photo') and the small list
+// thumbnails (imgClass 'obs-row-thumb'/'bird-row-thumb'). targetId must
+// currently exist in the DOM — if the popup/panel has since closed or
+// re-rendered, this is a harmless no-op.
+function loadPhotoInto(scientificName, targetId, imgClass = 'popup-photo') {
+  fetchSpeciesImage(scientificName).then(url => {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    if (url) {
+      el.outerHTML = `<img class="${imgClass}" id="${targetId}" src="${url}" alt="${scientificName}">`;
+    } else if (imgClass === 'popup-photo') {
+      el.outerHTML = `<div class="popup-photo-loading" id="${targetId}">No reference photo found</div>`;
+    } else {
+      el.remove(); // no thumbnail available — just drop the empty placeholder, keep the row clean
+    }
+  });
+}
+
+let photoIdCounter = 0;
+
 function toggleLayer(btn, layer) {
   btn.classList.toggle('on');
   btn.classList.contains('on') ? map.addLayer(layer) : map.removeLayer(layer);
@@ -925,10 +998,15 @@ async function loadData() {
       const [lng, lat] = f.geometry.coordinates;
       if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
       const name = f.properties.vernacularName || f.properties.scientificName || 'Plant sp.';
-      L.circleMarker([lat, lng], {
+      const sciName = f.properties.scientificName || null;
+      const photoId = 'photo-' + (photoIdCounter++);
+      const marker = L.circleMarker([lat, lng], {
         radius: 4, fillColor: '#52B788', color: '#2D5A3D',
         weight: 0.8, opacity: 1, fillOpacity: 0.8
-      }).bindPopup(`<b style="font-family:'DM Sans',sans-serif">🌿 ${name}</b><br><small style="color:#888">${f.properties.placeName || ''}</small>`).addTo(plantLayer);
+      }).bindPopup(`<b style="font-family:'DM Sans',sans-serif">🌿 ${name}</b><br><small style="color:#888">${f.properties.placeName || ''}</small>` +
+        (sciName ? `<div class="popup-photo-loading" id="${photoId}">Loading photo…</div>` : '')
+      ).addTo(plantLayer);
+      if (sciName) marker.on('popupopen', () => loadPhotoInto(sciName, photoId));
     });
 
     setProgress(55, 'Fetching bird observations…');
@@ -943,10 +1021,15 @@ async function loadData() {
       const [lng, lat] = f.geometry.coordinates;
       if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
       const name = f.properties.vernacularName || f.properties.scientificName || 'Bird sp.';
-      L.circleMarker([lat, lng], {
+      const sciName = f.properties.scientificName || null;
+      const photoId = 'photo-' + (photoIdCounter++);
+      const marker = L.circleMarker([lat, lng], {
         radius: 4, fillColor: '#E67E22', color: '#8B4000',
         weight: 0.8, opacity: 1, fillOpacity: 0.8
-      }).bindPopup(`<b style="font-family:'DM Sans',sans-serif">🐦 ${name}</b><br><small style="color:#888">${f.properties.placeName || ''}</small>`).addTo(birdLayer);
+      }).bindPopup(`<b style="font-family:'DM Sans',sans-serif">🐦 ${name}</b><br><small style="color:#888">${f.properties.placeName || ''}</small>` +
+        (sciName ? `<div class="popup-photo-loading" id="${photoId}">Loading photo…</div>` : '')
+      ).addTo(birdLayer);
+      if (sciName) marker.on('popupopen', () => loadPhotoInto(sciName, photoId));
     });
 
     setProgress(88, 'Loading water body geometries…');
@@ -1009,8 +1092,22 @@ function buildPanel(lat, lng) {
   const lc = lcs[Math.floor((lat * lng * 10) % lcs.length)];
   const score = Math.min(98, Math.round(55 + nPlants.length * 0.4 + nBirds.length * 0.3 + Math.random() * 10));
 
-  const pNames = [...new Set(nPlants.map(f => f.properties.vernacularName || f.properties.scientificName).filter(Boolean))].slice(0,6);
-  const bNames = [...new Set(nBirds.map(f => f.properties.vernacularName || f.properties.scientificName).filter(Boolean))].slice(0,6);
+  // Keep both the display name and the scientific name (for photo lookup) together,
+  // deduped by display name, with a stable DOM id pre-assigned per entry so we
+  // can trigger the photo fetch after the panel HTML below is injected.
+  const seenP = new Set();
+  const pEntries = nPlants.map(f => ({
+    display: f.properties.vernacularName || f.properties.scientificName,
+    sci: f.properties.scientificName
+  })).filter(e => e.display && !seenP.has(e.display) && seenP.add(e.display)).slice(0,6)
+    .map(e => ({ ...e, photoId: 'photo-' + (photoIdCounter++) }));
+
+  const seenB = new Set();
+  const bEntries = nBirds.map(f => ({
+    display: f.properties.vernacularName || f.properties.scientificName,
+    sci: f.properties.scientificName
+  })).filter(e => e.display && !seenB.has(e.display) && seenB.add(e.display)).slice(0,6)
+    .map(e => ({ ...e, photoId: 'photo-' + (photoIdCounter++) }));
 
   const recPlants = [
     { name:'Flame of the Forest', sci:'Butea monosperma', e:'🌳', attr:'Attracts Purple Sunbird, honeybees; nitrogen fixer' },
@@ -1068,9 +1165,9 @@ function buildPanel(lat, lng) {
           <div class="obs-number">${nPlants.length}</div>
           <div class="obs-label">records within 50 km<br><span style="color:#888;font-size:10px">India Biodiversity Portal</span></div>
         </div>
-        ${pNames.length > 0 ? `
+        ${pEntries.length > 0 ? `
         <div class="obs-list">
-          ${pNames.map(n=>`<div class="obs-row"><span class="obs-row-icon">🌱</span>${n}</div>`).join('')}
+          ${pEntries.map(e=>`<div class="obs-row"><span class="obs-row-icon">🌱</span>${e.sci ? `<span class="obs-row-thumb" id="${e.photoId}"></span>` : ''}${e.display}</div>`).join('')}
           ${nPlants.length > 6 ? `<div class="obs-row" style="color:var(--forest-light);font-style:italic">+ ${nPlants.length-6} more species recorded</div>` : ''}
         </div>` : `<div style="font-size:11px;color:#888;font-style:italic">No records in immediate vicinity</div>`}
       </div>
@@ -1086,9 +1183,9 @@ function buildPanel(lat, lng) {
           <div class="bird-obs-number">${nBirds.length}</div>
           <div class="bird-obs-label">records within 50 km<br><span style="color:#bbb;font-size:10px">India Biodiversity Portal</span></div>
         </div>
-        ${bNames.length > 0 ? `
+        ${bEntries.length > 0 ? `
         <div class="obs-list">
-          ${bNames.map(n=>`<div class="bird-row"><span class="obs-row-icon">🐦</span>${n}</div>`).join('')}
+          ${bEntries.map(e=>`<div class="bird-row"><span class="obs-row-icon">🐦</span>${e.sci ? `<span class="bird-row-thumb" id="${e.photoId}"></span>` : ''}${e.display}</div>`).join('')}
           ${nBirds.length > 6 ? `<div class="bird-row" style="color:#C8860A;font-style:italic">+ ${nBirds.length-6} more species recorded</div>` : ''}
         </div>` : `<div style="font-size:11px;color:#aaa;font-style:italic">No records in immediate vicinity</div>`}
       </div>
@@ -1119,6 +1216,10 @@ function buildPanel(lat, lng) {
       Export Site Report &rarr;
     </button>
   `;
+
+  // Now that the placeholders above are in the DOM, kick off their photo lookups.
+  pEntries.forEach(e => { if (e.sci) loadPhotoInto(e.sci, e.photoId, 'obs-row-thumb'); });
+  bEntries.forEach(e => { if (e.sci) loadPhotoInto(e.sci, e.photoId, 'bird-row-thumb'); });
 }
 
 loadData();
