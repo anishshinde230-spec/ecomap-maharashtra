@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EcoMap Maharashtra — Ecological Intelligence Platform</title>
+<title>BIO-X — EcoMap Maharashtra | Ecological Intelligence Platform</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css"/>
@@ -56,7 +56,7 @@ header {
   justify-content: space-between;
   flex-shrink: 0;
   z-index: 1000;
-  border-bottom: 2px solid var(--crimson);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .header-left {
@@ -68,12 +68,13 @@ header {
 .logo-mark {
   width: 32px;
   height: 32px;
-  background: var(--crimson);
-  border-radius: 4px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
@@ -133,7 +134,7 @@ nav button {
 }
 
 nav button:hover { color: var(--white); background: rgba(255,255,255,0.06); }
-nav button.active { color: var(--white); background: var(--crimson); }
+nav button.active { color: var(--white); background: rgba(255,255,255,0.06); box-shadow: inset 0 -2px 0 var(--forest-light); }
 
 /* ── STATS BAR ── */
 .stats-bar {
@@ -228,10 +229,11 @@ nav button.active { color: var(--white); background: var(--crimson); }
 .layer-row:hover { background: var(--warm-grey); }
 
 .layer-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .layer-label {
@@ -242,9 +244,9 @@ nav button.active { color: var(--white); background: var(--crimson); }
 }
 
 .toggle {
-  width: 30px;
-  height: 17px;
-  background: var(--mid-grey);
+  width: 28px;
+  height: 16px;
+  background: rgba(0,0,0,0.09);
   border-radius: 99px;
   position: relative;
   cursor: pointer;
@@ -252,9 +254,9 @@ nav button.active { color: var(--white); background: var(--crimson); }
   flex-shrink: 0;
 }
 
-.toggle.on { background: var(--forest-light); }
-.toggle::after { content: ''; position: absolute; width: 13px; height: 13px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.toggle.on::after { left: 15px; }
+.toggle.on { background: var(--forest-mid); }
+.toggle::after { content: ''; position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+.toggle.on::after { left: 14px; }
 
 .depth-switch {
   display: flex;
@@ -408,7 +410,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
 
 .progress-fill {
   height: 100%;
-  background: var(--crimson);
+  background: var(--forest-light);
   border-radius: 1px;
   width: 0%;
   transition: width 0.5s ease;
@@ -439,7 +441,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--crimson);
+  color: var(--forest-mid);
   margin-bottom: 4px;
 }
 
@@ -642,7 +644,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
 /* ── EXPORT ── */
 .export-btn {
   width: 100%;
-  background: var(--crimson);
+  background: var(--forest-mid);
   color: white;
   border: none;
   padding: 12px;
@@ -656,7 +658,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
   letter-spacing: 0.3px;
 }
 
-.export-btn:hover { background: var(--crimson-dark); }
+.export-btn:hover { background: var(--forest); }
 
 .section-divider {
   height: 1px;
@@ -715,7 +717,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
   transition: background 0.15s, transform 0.15s;
 }
 
-.btn-3d:hover { background: var(--crimson); transform: translateY(-1px); }
+.btn-3d:hover { background: var(--forest-mid); transform: translateY(-1px); }
 
 .terrain-overlay {
   position: fixed;
@@ -801,16 +803,408 @@ nav button.active { color: var(--white); background: var(--crimson); }
 }
 
 .terrain-loading.hide { display: none; }
+
+/* ── BIO-X LANDING ── */
+#bio-x-landing {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: #06090a;
+  overflow: hidden;
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+#bio-x-landing.exiting {
+  opacity: 0;
+  transform: translateY(-3%);
+  pointer-events: none;
+}
+#landing-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: pointer;
+}
+.landing-chrome {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.landing-mark {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+  font-size: 22px;
+  opacity: 0.85;
+}
+.landing-brandmark {
+  position: absolute;
+  top: 34px;
+  right: 32px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: #9FBCA6;
+}
+.landing-tagline {
+  position: absolute;
+  bottom: 32px;
+  left: 32px;
+  max-width: 220px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  line-height: 1.7;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(230,232,225,0.5);
+}
+.landing-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 90%;
+  padding: 60px 40px;
+  background: radial-gradient(ellipse at center, rgba(6,9,10,0.82) 0%, rgba(6,9,10,0.35) 55%, rgba(6,9,10,0) 75%);
+}
+.landing-title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: clamp(56px, 12vw, 168px);
+  color: #F1EFE6;
+  letter-spacing: -2px;
+  line-height: 1;
+  text-shadow: 0 4px 30px rgba(0,0,0,0.6);
+}
+.landing-subtitle {
+  margin-top: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: clamp(12px, 1.4vw, 15px);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #9FBCA6;
+  font-weight: 500;
+}
+.landing-scroll {
+  position: absolute;
+  bottom: 30px;
+  right: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  color: #9FBCA6;
+  font-family: 'DM Sans', sans-serif;
+}
+.landing-scroll-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  writing-mode: vertical-rl;
+}
+.landing-scroll-chevron {
+  font-size: 20px;
+  line-height: 1;
+  animation: landingBounce 1.8s ease-in-out infinite;
+}
+@keyframes landingBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+@media (max-width: 640px) {
+  .landing-tagline { display: none; }
+  .landing-brandmark { display: none; }
+}
 </style>
 </head>
 <body>
+
+<div id="bio-x-landing">
+  <canvas id="landing-canvas"></canvas>
+  <div class="landing-chrome">
+    <div class="landing-mark">🌿</div>
+    <div class="landing-brandmark">MAHARASHTRA</div>
+    <div class="landing-tagline">EcoMap Maharashtra<br>Pilot belt — Pune &amp; Nashik</div>
+    <div class="landing-center">
+      <div class="landing-title">BIO-X</div>
+      <div class="landing-subtitle">Ecological Intelligence for Landscape Architects</div>
+    </div>
+    <button class="landing-scroll" id="landing-scroll-btn" aria-label="Enter BIO-X">
+      <span class="landing-scroll-label">SCROLL</span>
+      <span class="landing-scroll-chevron">⌄</span>
+    </button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var overlay = document.getElementById('bio-x-landing');
+  var canvas = document.getElementById('landing-canvas');
+  var ctx = canvas.getContext('2d');
+  var scrollBtn = document.getElementById('landing-scroll-btn');
+  if (!overlay || !canvas || !ctx) return;
+
+  var W, H, dpr;
+  var glyphs = [];
+  var offscreen = null, offctx = null;
+  var BG = '#06090a';
+
+  // Domain-warped sine field stands in for Perlin/curl noise (no external
+  // libraries) — cheap to sample, produces smooth swirling contour-like
+  // flow, close to the topographic reference the user shared.
+  function fieldSample(x, y) {
+    var nx = x * 0.006, ny = y * 0.006;
+    var wx = nx + Math.sin(ny * 1.7 + 1.3) * 1.1;
+    var wy = ny + Math.cos(nx * 1.4 - 0.7) * 1.1;
+    var n1 = Math.sin(wx * 1.8) + Math.cos(wy * 2.1) * 0.8;
+    var n2 = Math.sin((wx + wy) * 1.2 + 2.0) * 0.7 + Math.cos((wx - wy) * 0.9) * 0.6;
+    var val = (Math.sin(wx * 2.6 + wy * 1.1) + Math.cos(wx * 0.8 - wy * 2.3)) * 0.5 + 0.5;
+    return { ang: (n1 + n2) * 1.3, val: Math.max(0, Math.min(1, val)) };
+  }
+
+  // A soft rotational pull toward a point — used to seed the one or two
+  // spiral/vortex centers visible in the reference image.
+  function vortexDelta(x, y, vx, vy, strength, radius) {
+    var dx = x - vx, dy = y - vy;
+    var d = Math.sqrt(dx * dx + dy * dy) + 0.001;
+    var falloff = Math.exp(-d / radius);
+    return { dx: (-dy / d) * strength * falloff, dy: (dx / d) * strength * falloff };
+  }
+
+  function traceStreamline(x0, y0, vortices, steps, stepLen) {
+    var x = x0, y = y0;
+    for (var i = 0; i < steps; i++) {
+      if (x < -10 || x > W + 10 || y < -10 || y > H + 10) break;
+      var f = fieldSample(x, y);
+      var dx = Math.cos(f.ang), dy = Math.sin(f.ang);
+      for (var vi = 0; vi < vortices.length; vi++) {
+        var v = vortices[vi];
+        var vd = vortexDelta(x, y, v.x, v.y, v.strength, v.radius);
+        dx += vd.dx * 0.02; dy += vd.dy * 0.02;
+      }
+      var mag = Math.sqrt(dx * dx + dy * dy) || 1;
+      dx /= mag; dy /= mag;
+
+      var tipFade = i / steps;
+      var v2 = f.val, color;
+      if (v2 < 0.36) color = 'rgba(74,124,89,' + (0.52 - tipFade * 0.28) + ')';
+      else if (v2 < 0.68) color = 'rgba(58,120,150,' + (0.5 - tipFade * 0.27) + ')';
+      else color = 'rgba(201,168,76,' + (0.44 - tipFade * 0.24) + ')';
+
+      glyphs.push({
+        x: x, y: y, angle: Math.atan2(dy, dx),
+        char: String(Math.floor(Math.random() * 10)),
+        color: color, size: 3.4
+      });
+
+      x += dx * stepLen;
+      y += dy * stepLen;
+    }
+  }
+
+  // Builds the dense flow-field texture and bakes it into an offscreen
+  // canvas — real-time canvas text at this density would be far too slow
+  // to redraw every frame, but a single bake is cheap and then the visible
+  // canvas just needs one drawImage() per frame plus a small live patch
+  // around the cursor (see tick()). At this glyph count (tens of thousands,
+  // to get the dense reference look) even a one-time bake is too slow to
+  // do synchronously without a jank/freeze, so it's spread across several
+  // animation frames — which doubles as a nice "assembling" reveal.
+  var buildQueue = null;
+  var buildIdx = 0;
+  var fieldReady = false;
+  var buildToken = 0;
+
+  function buildField() {
+    fieldReady = false;
+    glyphs = [];
+    offscreen = document.createElement('canvas');
+    offscreen.width = canvas.width;
+    offscreen.height = canvas.height;
+    offctx = offscreen.getContext('2d');
+    offctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    offctx.fillStyle = BG;
+    offctx.fillRect(0, 0, W, H);
+    offctx.textAlign = 'center';
+    offctx.textBaseline = 'middle';
+    offctx.font = "3px 'DM Sans', sans-serif";
+
+    var vortices = [
+      { x: W * 0.46, y: H * 0.58, strength: 90, radius: Math.min(W, H) * 0.3 },
+      { x: W * 0.64, y: H * 0.28, strength: -55, radius: Math.min(W, H) * 0.32 }
+    ];
+
+    var spacing = W < 700 ? 11 : 14;
+    var cols = Math.ceil(W / spacing), rows = Math.ceil(H / spacing);
+    buildQueue = [];
+    for (var r = 0; r <= rows; r++) {
+      for (var c = 0; c <= cols; c++) {
+        buildQueue.push({
+          x: c * spacing + (Math.random() - 0.5) * 6,
+          y: r * spacing + (Math.random() - 0.5) * 6
+        });
+      }
+    }
+    buildIdx = 0;
+    var myToken = ++buildToken;
+    processBuildChunk(myToken, vortices);
+  }
+
+  // Traces+draws a batch of streamlines per frame (glyphs are drawn upright,
+  // no per-glyph rotation, since at ~3px size the rotation is imperceptible
+  // but save/rotate/restore per glyph is the dominant cost at this scale).
+  function processBuildChunk(myToken, vortices) {
+    if (myToken !== buildToken || exited) return; // superseded by a resize, or the user already scrolled past
+    var CHUNK = 60;
+    var end = Math.min(buildQueue.length, buildIdx + CHUNK);
+    for (; buildIdx < end; buildIdx++) {
+      var s = buildQueue[buildIdx];
+      traceStreamline(s.x, s.y, vortices, 60, 3.0);
+    }
+    // draw only the glyphs generated since the last chunk
+    for (var i = drawnGlyphCount; i < glyphs.length; i++) {
+      var g = glyphs[i];
+      offctx.fillStyle = g.color;
+      offctx.fillText(g.char, g.x, g.y);
+    }
+    drawnGlyphCount = glyphs.length;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(offscreen, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    if (buildIdx < buildQueue.length) {
+      requestAnimationFrame(function () { processBuildChunk(myToken, vortices); });
+    } else {
+      fieldReady = true;
+    }
+  }
+  var drawnGlyphCount = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawnGlyphCount = 0;
+    buildField();
+  }
+
+  var mouseX = -9999, mouseY = -9999, smX = -9999, smY = -9999;
+  var hadPatch = false, lastPatch = null;
+  function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
+  function onTouchMove(e) { if (e.touches && e.touches[0]) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; } }
+  window.addEventListener('mousemove', onMouseMove, { passive: true });
+  window.addEventListener('touchmove', onTouchMove, { passive: true });
+
+  function brighten(rgba, boostAlpha) {
+    var m = /rgba\((\d+),(\d+),(\d+),([\d.]+)\)/.exec(rgba);
+    if (!m) return rgba;
+    var a = Math.min(1, parseFloat(m[4]) + boostAlpha);
+    return 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + a + ')';
+  }
+
+  var raf = null;
+  var RADIUS = 120;
+  function tick() {
+    if (!fieldReady) { raf = requestAnimationFrame(tick); return; }
+    smX += (mouseX - smX) * 0.14;
+    smY += (mouseY - smY) * 0.14;
+
+    if (offscreen) {
+      // restore last frame's highlighted patch back to the static base
+      if (hadPatch) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(offscreen, lastPatch.dx, lastPatch.dy, lastPatch.dw, lastPatch.dh,
+                                   lastPatch.dx, lastPatch.dy, lastPatch.dw, lastPatch.dh);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        hadPatch = false;
+      }
+
+      if (smX > -RADIUS && smX < W + RADIUS && smY > -RADIUS && smY < H + RADIUS) {
+        var bx = Math.max(0, smX - RADIUS), by = Math.max(0, smY - RADIUS);
+        var bw = Math.min(W, smX + RADIUS) - bx, bh = Math.min(H, smY + RADIUS) - by;
+        if (bw > 0 && bh > 0) {
+          for (var i = 0; i < glyphs.length; i++) {
+            var g = glyphs[i];
+            if (g.x < bx - 2 || g.x > bx + bw + 2 || g.y < by - 2 || g.y > by + bh + 2) continue;
+            var dx = g.x - smX, dy = g.y - smY;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist >= RADIUS) continue;
+            var push = (RADIUS - dist) / RADIUS;
+            var nx = dist > 0.01 ? dx / dist : 0, ny = dist > 0.01 ? dy / dist : 0;
+            ctx.save();
+            ctx.translate(g.x + nx * push * 9, g.y + ny * push * 9);
+            ctx.rotate(g.angle);
+            ctx.fillStyle = brighten(g.color, push * 0.35);
+            ctx.font = (g.size + push * 2.4) + "px 'DM Sans', sans-serif";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(g.char, 0, 0);
+            ctx.restore();
+          }
+          lastPatch = {
+            dx: Math.round(bx * dpr), dy: Math.round(by * dpr),
+            dw: Math.round(bw * dpr), dh: Math.round(bh * dpr)
+          };
+          hadPatch = true;
+        }
+      }
+    }
+    raf = requestAnimationFrame(tick);
+  }
+
+  var exited = false;
+  var touchStartY = null;
+  function onWheel(e) { if (e.deltaY > 0) exitLanding(); }
+  function onTouchStart(e) { touchStartY = e.touches[0] ? e.touches[0].clientY : null; }
+  function onTouchEnd(e) {
+    if (touchStartY !== null && e.changedTouches && e.changedTouches[0]) {
+      var dy = touchStartY - e.changedTouches[0].clientY;
+      if (dy > 30) exitLanding();
+    }
+  }
+  function onKeydown(e) { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') exitLanding(); }
+  function onCanvasClick() { exitLanding(); }
+
+  function exitLanding() {
+    if (exited) return;
+    exited = true;
+    overlay.classList.add('exiting');
+    if (raf) cancelAnimationFrame(raf);
+    window.removeEventListener('wheel', onWheel);
+    window.removeEventListener('touchstart', onTouchStart);
+    window.removeEventListener('touchend', onTouchEnd);
+    window.removeEventListener('keydown', onKeydown);
+    setTimeout(function () { overlay.style.display = 'none'; }, 950);
+  }
+
+  window.addEventListener('wheel', onWheel, { passive: true });
+  window.addEventListener('touchstart', onTouchStart, { passive: true });
+  window.addEventListener('touchend', onTouchEnd, { passive: true });
+  window.addEventListener('keydown', onKeydown);
+  canvas.addEventListener('click', onCanvasClick);
+  scrollBtn.addEventListener('click', exitLanding);
+  window.addEventListener('resize', resize, { passive: true });
+
+  resize();
+  raf = requestAnimationFrame(tick);
+})();
+</script>
 
 <header>
   <div class="header-left">
     <div class="logo-mark">🌿</div>
     <div class="logo-wordmark">
-      <div class="logo-title">EcoMap Maharashtra</div>
-      <div class="logo-subtitle">Ecological Intelligence Platform</div>
+      <div class="logo-title">BIO-X</div>
+      <div class="logo-subtitle">EcoMap Maharashtra · Ecological Intelligence Platform</div>
     </div>
     <div class="header-divider"></div>
     <div class="header-tagline">Native ecosystems for better design</div>
@@ -841,17 +1235,17 @@ nav button.active { color: var(--white); background: var(--crimson); }
     <div class="sidebar-section">
       <div class="sidebar-section-label">Terrain</div>
       <div class="layer-row">
-        <div class="layer-swatch" style="background:#8B6914; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#8B6914; border-radius:50%;"></div>
         <span class="layer-label">Elevation</span>
         <div class="toggle on" id="elevation-toggle" onclick="toggleLayer(this, elevationLayer)"></div>
       </div>
       <div class="layer-row">
-        <div class="layer-swatch" style="background:#C0392B; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#C0392B; border-radius:50%;"></div>
         <span class="layer-label">Slope</span>
         <div class="toggle on" id="slope-toggle" onclick="toggleLayer(this, slopeLayer)"></div>
       </div>
       <div class="layer-row">
-        <div class="layer-swatch" style="background:#8E44AD; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#8E44AD; border-radius:50%;"></div>
         <span class="layer-label">Aspect</span>
         <div class="toggle" id="aspect-toggle" onclick="toggleLayer(this, aspectLayer)"></div>
       </div>
@@ -860,12 +1254,12 @@ nav button.active { color: var(--white); background: var(--crimson); }
     <div class="sidebar-section">
       <div class="sidebar-section-label">Ecology</div>
       <div class="layer-row">
-        <div class="layer-swatch" style="background:#27AE60; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#27AE60; border-radius:50%;"></div>
         <span class="layer-label">Land Cover</span>
         <div class="toggle on" id="landcover-toggle" onclick="toggleLayer(this, landcoverLayer)"></div>
       </div>
       <div class="layer-row">
-        <div class="layer-swatch" style="background:#2980B9; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#2980B9; border-radius:50%;"></div>
         <span class="layer-label">Water Bodies</span>
         <div class="toggle on" id="water-toggle" onclick="toggleLayer(this, waterLayer)"></div>
       </div>
@@ -875,7 +1269,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
       <div class="sidebar-section-label">Soil</div>
 
       <div class="layer-row stacked">
-        <div class="layer-swatch" style="background:#A07850; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#A07850; border-radius:50%;"></div>
         <span class="layer-label">Soil pH</span>
         <div class="toggle on" id="ph-toggle" onclick="toggleSoilLayer('ph')"></div>
         <div class="depth-switch" data-layer="ph">
@@ -885,7 +1279,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
       </div>
 
       <div class="layer-row stacked">
-        <div class="layer-swatch" style="background:#5B8DB8; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#5B8DB8; border-radius:50%;"></div>
         <span class="layer-label">Soil Clay</span>
         <div class="toggle" id="clay-toggle" onclick="toggleSoilLayer('clay')"></div>
         <div class="depth-switch" data-layer="clay">
@@ -895,7 +1289,7 @@ nav button.active { color: var(--white); background: var(--crimson); }
       </div>
 
       <div class="layer-row stacked">
-        <div class="layer-swatch" style="background:#D4A24C; border-radius:2px;"></div>
+        <div class="layer-swatch" style="background:#D4A24C; border-radius:50%;"></div>
         <span class="layer-label">Soil Sand</span>
         <div class="toggle" id="sand-toggle" onclick="toggleSoilLayer('sand')"></div>
         <div class="depth-switch" data-layer="sand">
